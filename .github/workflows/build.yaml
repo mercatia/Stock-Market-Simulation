@@ -30,6 +30,11 @@ jobs:
       - name: Build with Maven
         working-directory: ./Backend
         run: mvn clean package -DskipTests
+      - run: mkdir staging && cp ./Backend/target/*.jar staging
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Package
+          path: staging        
 
   docker:
     needs: build
@@ -63,13 +68,19 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
+      - name: Download a single artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Package
+          path: ./Backend/target
+
+      - run: ls -lart ./Backend/target
 
       - name: build and push
         uses: docker/build-push-action@v2
-        working-directory: ./Backend
         with:
-          context: .
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          context: ./Backend
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}}}
